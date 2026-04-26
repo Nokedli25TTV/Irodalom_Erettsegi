@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magyar Irodalom – Teljes Érettségi Segédlet</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================================================
+     HERO + FŐNAVIGÁCIÓ
+     ============================================================ -->
+<header class="hero">
+  <div class="hero-label">Érettségi segédlet · Magyar irodalom</div>
+  <h1>Magyar Irodalom</h1>
+  <p>Irodalmi műfajok · Stílusirányzatok · Verstani elemek · Szerzők és művek – minden egy helyen</p>
+  <nav class="main-nav">
+    <button class="main-tab active" onclick="showMain('sec-mufajok', this)">📖 Irodalmi műfajok</button>
+    <button class="main-tab" onclick="showMain('sec-stilus', this)">🎨 Stílusirányzatok</button>
+    <button class="main-tab" onclick="showMain('sec-verstani', this)">🎼 Verstani elemek</button>
+    <button class="main-tab" onclick="showMain('sec-szerzok', this)">✍️ Szerzők és művek</button>
+  </nav>
+</header>
+
+<main class="main-content">
+
+<!-- ============================================================
+     1. IRODALMI MŰFAJOK
+     ============================================================ -->
+<div id="sec-mufajok" class="main-section active">
+
+  <nav class="muf-sub-nav">
+    <button class="tab-btn" onclick="mufShow('epika', this, 'active-epika')">📖 Epika</button>
+    <button class="tab-btn" onclick="mufShow('lira', this, 'active-lira')">✨ Líra</button>
+    <button class="tab-btn" onclick="mufShow('drama', this, 'active-drama')">🎭 Dráma</button>
+    <button class="tab-btn" onclick="mufShow('osszefoglalo', this, 'active-osszefoglalo')">📋 Összefoglaló</button>
+    <button class="tab-btn" onclick="mufShow('kerdesek', this, 'active-kerdesek')">🎯 Kérdések</button>
+  </nav>
+
+  <!-- EPIKA -->
+  <section id="epika" class="section">
+    <div class="section-header">
+      <div class="section-icon epika">📖</div>
+      <div>
+        <div class="section-title">Epika</div>
+        <div class="section-subtitle">Elbeszélő irodalom – van narrátor, cselekmény, tér és idő</div>
+      </div>
+    </div>
+    <div class="def-box epika">
+      <strong>Definíció</strong>
+      Az epika (elbeszélő nem) olyan irodalmi alkotásokat foglal magában, amelyekben egy narrátor (elbeszélő) mesél el eseményeket. Jellemzője a cselekmény, a szereplők, az elbeszélő nézőpont és az idő–tér meghatározása. Lehet verses (eposz, ballada) vagy prózai (regény, novella).
+    </div>
+    <div class="cards-grid" id="epika-cards"></div>
+  </section>
+
+  <!-- LÍRA -->
+  <section id="lira" class="section">
+    <div class="section-header">
+      <div class="section-icon lira">✨</div>
+      <div>
+        <div class="section-title">Líra</div>
+        <div class="section-subtitle">Érzelmi-hangulati költészet – az én közvetlen kifejezése</div>
+      </div>
+    </div>
+    <div class="def-box lira">
+      <strong>Definíció</strong>
+      A líra (érzelmi nem) az én belső világát, érzelmeit és gondolatait fejezi ki közvetlenül. Nincs elkülönült narrátor – a lírai én maga szól. Jellemzően verses forma, ritmikus–zenei hatású. A legfontosabb lírai eszközök: metafora, szimbólum, anafora, alliteráció, rím.
+    </div>
+    <div class="cards-grid" id="lira-cards"></div>
+  </section>
+
+  <!-- DRÁMA -->
+  <section id="drama" class="section">
+    <div class="section-header">
+      <div class="section-icon drama">🎭</div>
+      <div>
+        <div class="section-title">Dráma</div>
+        <div class="section-subtitle">Párbeszédes, színpadi irodalom – előadásra szánt</div>
+      </div>
+    </div>
+    <div class="def-box drama">
+      <strong>Definíció</strong>
+      A dráma (cselekvő nem) szereplők párbeszédein és tetteiken keresztül mutat be konfliktusokat, előadásra szánva. Nincs külső narrátor – a cselekmény a dialógusokból és a szereplők viselkedéséből bontakozik ki. Szerkezete általában: expozíció – bonyodalom – tetőpont – fordulat – megoldás.
+    </div>
+    <div class="cards-grid" id="drama-cards"></div>
+  </section>
+
+  <!-- ÖSSZEFOGLALÓ -->
+  <section id="osszefoglalo" class="section">
+    <div class="section-header">
+      <div class="section-icon plain">📋</div>
+      <div>
+        <div class="section-title">Összefoglaló táblázat</div>
+        <div class="section-subtitle">Minden műfaj egy helyen – gyors áttekintéshez</div>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Nem</th>
+            <th>Műfaj</th>
+            <th>Forma</th>
+            <th>Legfontosabb jellemző</th>
+            <th>Magyar példa</th>
+          </tr>
+        </thead>
+        <tbody id="summary-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KÉRDÉSEK -->
+  <section id="kerdesek" class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:#e8f5e9;">🎯</div>
+      <div>
+        <div class="section-title">Gyakorlókérdések</div>
+        <div class="section-subtitle">Ellenőrizd a tudásodat érettségi stílusú feladatokkal</div>
+      </div>
+    </div>
+    <div class="quiz-score-bar">
+      <span class="score-num" id="score-display">0 / 0</span>
+      <p>helyes válasz</p>
+      <button class="reset-btn" onclick="resetQuiz()">↺ Újrakezdés</button>
+    </div>
+    <div id="quiz-container"></div>
+  </section>
+
+</div><!-- /sec-mufajok -->
+
+<!-- ============================================================
+     2. STÍLUSIRÁNYZATOK ÉS KORSZAKOK
+     ============================================================ -->
+<div id="sec-stilus" class="main-section">
+
+  <div class="section-head">
+    <div class="section-icon plain">🎨</div>
+    <div>
+      <div class="section-title-text">Stílusirányzatok és korszakok</div>
+      <div class="section-subtitle">Időrendben · jellemzők · magyar vonatkozások</div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Stílus / korszak</th>
+          <th>Időszak</th>
+          <th>Fő jellemzők</th>
+          <th>Magyar vonatkozás</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="idx">1</td>
+          <td><span class="nev">Antikvitás</span><br><span class="tag antik">ókori</span></td>
+          <td class="ido">Kr. e. 8. sz. –<br>Kr. u. 5. sz.</td>
+          <td>Görög-római irodalom alapjait teremti meg. Eposz, dráma, líra műfajainak kialakulása. Az ész, szépség és harmónia eszménye. Örök emberi kérdések első megfogalmazása.</td>
+          <td>Alapvető hatás minden korszakra. Horatius ódái Berzsenyire, Babitsra hatottak. Janus Pannonius latin nyelven írt antik mintára.</td>
+        </tr>
+        <tr>
+          <td class="idx">2</td>
+          <td><span class="nev">Középkor</span><br><span class="tag kozep">vallásos</span></td>
+          <td class="ido">5–15. sz.</td>
+          <td>Teocentrikus (Isten-központú) világkép. Latin nyelvűség, egyházi irodalom. Lovagi epika, himnuszok, legendák. Az ember Isten felé törekszik, a túlvilág fontosabb a földi életnél.</td>
+          <td>Halotti Beszéd (13. sz.), Ómagyar Mária-siralom. A reformáció előtt szinte kizárólag egyházi témák.</td>
+        </tr>
+        <tr>
+          <td class="idx">3</td>
+          <td><span class="nev">Reneszánsz</span><br><span class="tag ren">humanizmus</span></td>
+          <td class="ido">14–17. sz.</td>
+          <td>Az ember kerül a középpontba (antropocentrizmus). Az antik kultúra újjáéledése. Világi témák: szerelem, természet, barátság. Anyanyelvi irodalom erősödése. Harmónia és arány.</td>
+          <td>Janus Pannonius (15. sz.), Balassi Bálint (16. sz.) – az első nagy magyar világi lírikusa.</td>
+        </tr>
+        <tr>
+          <td class="idx">4</td>
+          <td><span class="nev">Barokk</span><br><span class="tag bar">díszített</span></td>
+          <td class="ido">17–18. sz. eleje</td>
+          <td>Nagyszabású, túldíszített, hatásos stílus. Vallásos és világi témák keveredése. Ellentétek feszültsége (élet–halál, bűn–kegyelem). Hatalmas eposzok, drámai hatás.</td>
+          <td>Zrínyi Miklós: Szigeti veszedelem (1651). Mikes Kelemen prózája a barokk–felvilágosodás határán.</td>
+        </tr>
+        <tr>
+          <td class="idx">5</td>
+          <td><span class="nev">Rokokó</span><br><span class="tag rok">játékos</span></td>
+          <td class="ido">18. sz. közepe</td>
+          <td>A barokk könnyedebb, vidámabb változata. Szerelmi témák, játékosság, kellem. Pásztoridill, apró örömök dicsőítése. Kerüli a komoly erkölcsi kérdéseket.</td>
+          <td>Csokonai Vitéz Mihály korai versei (pl. Tartózkodó kérelem). A magyar rokokó rövid, de szép korszaka.</td>
+        </tr>
+        <tr>
+          <td class="idx">6</td>
+          <td><span class="nev">Klasszicizmus</span><br><span class="tag klas">szabályos</span></td>
+          <td class="ido">17–19. sz. eleje</td>
+          <td>Az antik minták szigorú követése. Szabályos formák, műfaji tisztaság, az ész elsőbbsége az érzelmekkel szemben. Erkölcsi célzat, mértéktartás, harmónia.</td>
+          <td>Berzsenyi Dániel horatiusi ódái. Kazinczy Ferenc nyelvújítása és irodalmi programja.</td>
+        </tr>
+        <tr>
+          <td class="idx">7</td>
+          <td><span class="nev">Szentimentalizmus</span><br><span class="tag imp">érzékeny</span></td>
+          <td class="ido">18. sz. vége –<br>19. sz. eleje</td>
+          <td>Az érzelmek, a szív hangjának előtérbe helyezése a klasszicizmus észelvűségével szemben. Könny, szenvedés, természetközelség. Az egyén belső világa fontos.</td>
+          <td>Kármán József: Fanni hagyományai. Csokonai szentimentális versei (pl. A Reményhez).</td>
+        </tr>
+        <tr>
+          <td class="idx">8</td>
+          <td><span class="nev">Romantika</span><br><span class="tag rom">érzelmek</span></td>
+          <td class="ido">19. sz. első fele<br>(1800–1850-es évek)</td>
+          <td>Érzelmek, szabadság, nemzeti eszmék kultusza. Rendkívüli hős, egzotikus helyszínek, történelmi témák. A nép és a nemzet idealizálása. Lázadás a szabályok ellen.</td>
+          <td>Vörösmarty, Kölcsey, Petőfi, Arany. A reformkor és 1848 irodalma szinte teljes egészében romantikus.</td>
+        </tr>
+        <tr>
+          <td class="idx">9</td>
+          <td><span class="nev">Népiességi mozgalom</span><br><span class="tag nep">népi</span></td>
+          <td class="ido">19. sz. közepe<br>(1840–1860-as évek)</td>
+          <td>A népdal, népmese, népi nyelv bevonása az irodalomba. Az egyszerű nép életének ábrázolása. A romantikán belüli irányzat, de önálló jellegzetességekkel.</td>
+          <td>Petőfi Sándor és Arany János a két fő képviselő. János vitéz és a Toldi a népiességi program csúcspontjai.</td>
+        </tr>
+        <tr>
+          <td class="idx">10</td>
+          <td><span class="nev">Realizmus</span><br><span class="tag real">valóságábrázolás</span></td>
+          <td class="ido">19. sz. második fele<br>(1850–1900-as évek)</td>
+          <td>A valóság hű, tárgyilagos ábrázolása. Társadalomkritika, a középosztály és a szegények életének bemutatása. Aprólékos jellemábrázolás, hiteles milieu.</td>
+          <td>Jókai Mór (romantikus elemekkel), Mikszáth Kálmán, Móricz Zsigmond. A dzsentri világ és a parasztság kritikája.</td>
+        </tr>
+        <tr>
+          <td class="idx">11</td>
+          <td><span class="nev">Naturalizmus</span><br><span class="tag nat">ösztönök</span></td>
+          <td class="ido">19. sz. vége<br>(1870–1900)</td>
+          <td>A realizmus szélsőséges változata. Az embert biológiai és társadalmi tényezők határozzák meg. Ösztönök, nyomor, betegség kendőzetlen ábrázolása. Tudományos igényű megfigyelés.</td>
+          <td>Móricz korai prózájában (Sárarany) erős naturalista hatás. Zola nyomán a paraszti élet nyersebb ábrázolása.</td>
+        </tr>
+        <tr>
+          <td class="idx">12</td>
+          <td><span class="nev">Szecesszió</span><br><span class="tag szec">dekoratív</span></td>
+          <td class="ido">1890–1910-es évek</td>
+          <td>Díszítő, dekoratív, lebegő stílus. Az élet és halál határán lebegő hangulat. Szépség-kultusz, az érzékek finomítása. Átmeneti stílus a realizmus és a modernség között.</td>
+          <td>Ady Endre korai korszaka, Krúdy Gyula prózája. A Nyugat folyóirat indulásának időszaka (1908).</td>
+        </tr>
+        <tr>
+          <td class="idx">13</td>
+          <td><span class="nev">Impresszionizmus</span><br><span class="tag imp">hangulatok</span></td>
+          <td class="ido">1880–1920-as évek</td>
+          <td>Pillanatképek, hangulatok, benyomások megragadása. A valóság szubjektív, érzéki befogadása. Zenei hangzásra törekvés, a körvonalak elmosása. Belső élmény fontosabb a tárgynál.</td>
+          <td>Kosztolányi Dezső, Krúdy Gyula, Tóth Árpád, Juhász Gyula. A Nyugat első generációjának meghatározó stílusa.</td>
+        </tr>
+        <tr>
+          <td class="idx">14</td>
+          <td><span class="nev">Szimbolizmus</span><br><span class="tag szim">szimbólumok</span></td>
+          <td class="ido">1880–1920-as évek</td>
+          <td>Rejtett, mélyebb valóság kifejezése szimbólumokon keresztül. Zeneiség, sugalmazás, sejtetés. A kimondott helyett a sejtetett a fontos. Szinesztézia, titokzatosság.</td>
+          <td>Ady Endre a fő képviselő (pl. A magyar Ugaron, Góg és Magóg fia). Babits és Kosztolányi is használ szimbolista elemeket.</td>
+        </tr>
+        <tr>
+          <td class="idx">15</td>
+          <td><span class="nev">Avantgárd</span><br><span class="tag avant">kísérletező</span></td>
+          <td class="ido">1910–1930-as évek</td>
+          <td>A hagyományok teljes elvetése, gyökeres megújítás. Több irányzat együtt: <strong>expresszionizmus</strong> (belső érzelmek, kiáltás), <strong>dadaizmus</strong> (abszurd, értelmetlen), <strong>szürrealizmus</strong> (álom, tudatalatti), <strong>futurizmus</strong> (gép, sebesség dicsőítése). Formai kísérletezés, szabad vers.</td>
+          <td>József Attila korai versei (Nem én kiáltok – expresszionizmus). Illyés Gyula szürrealista korszaka. Kassák Lajos az avantgárd vezéregyénisége.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /sec-stilus -->
+
+<!-- ============================================================
+     3. VERSTANI ELEMEK
+     ============================================================ -->
+<div id="sec-verstani" class="main-section">
+
+  <div class="section-head">
+    <div class="section-icon green">🎼</div>
+    <div>
+      <div class="section-title-text">Verstani elemek</div>
+      <div class="section-subtitle">Rímfajták · rímképletek · versformák · ritmusrendszerek · stilisztikai alakzatok</div>
+    </div>
+  </div>
+
+  <div class="vers-sub-nav">
+    <button onclick="versShow(0)">Rímfajták</button>
+    <button onclick="versShow(1)">Rímképletek</button>
+    <button onclick="versShow(2)">Versformák / strófák</button>
+    <button onclick="versShow(3)">Ritmusrendszerek</button>
+    <button onclick="versShow(4)">Stilisztikai alakzatok</button>
+  </div>
+
+  <!-- 0: RÍMFAJTÁK -->
+  <div class="vers-panel" id="vp0">
+    <table class="data-table">
+      <thead><tr><th>Rímfajta</th><th>Meghatározás</th><th>Példa</th></tr></thead>
+      <tbody>
+        <tr><td><span class="nev">Tiszta rím</span><br><span class="tag t5">tökéletes</span></td><td>A rímelő szavak utolsó hangsúlyos magánhangzójától kezdve tökéletesen egyeznek.</td><td class="pelda">„ház – láz", „élet – vélet"</td></tr>
+        <tr><td><span class="nev">Asszonánc</span><br><span class="tag t1">magánhangzó-rím</span></td><td>Csak a hangsúlyos magánhangzók egyeznek, a mássalhangzók nem. Jellegzetesen magyar rímtípus.</td><td class="pelda">„világ – virág", „alom – karom"</td></tr>
+        <tr><td><span class="nev">Mássalhangzó-rím</span><br><span class="tag t2">konszonáns</span></td><td>A mássalhangzók egyeznek, a magánhangzók nem feltétlenül.</td><td class="pelda">„kert – kort", „fut – fát"</td></tr>
+        <tr><td><span class="nev">Gazdag rím</span><br><span class="tag t5">bővített</span></td><td>A rímelés a hangsúlyos szótagnál korábbra nyúlik vissza.</td><td class="pelda">„szerelem – feledelem"</td></tr>
+        <tr><td><span class="nev">Leoninus (belső rím)</span><br><span class="tag t3">belső</span></td><td>A sor belseje is rímel a sor végével.</td><td class="pelda">„Zúg az erdő, zúg a mező" – erdő / mező</td></tr>
+        <tr><td><span class="nev">Alliteráció</span><br><span class="tag t4">hangrím</span></td><td>Egymást követő szavak ugyanazzal a hanggal / betűvel kezdődnek.</td><td class="pelda">„Sötét erdő sűrű sátora" (Arany)</td></tr>
+        <tr><td><span class="nev">Rímes próza</span><br><span class="tag t2">próza</span></td><td>Prózai szövegbe épített, nem rendszeres rímek.</td><td class="pelda">Korai bibliai fordítások, egyes archaikus szövegek</td></tr>
+        <tr><td><span class="nev">Rímtelen vers (blank verse)</span><br><span class="tag t1">rímtelen</span></td><td>Nincs végrím, de meghatározott ritmus van. Pl. jambikus pentameter.</td><td class="pelda">Shakespeare drámái, Arany egyes fordításai</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 1: RÍMKÉPLETEK -->
+  <div class="vers-panel" id="vp1">
+    <table class="data-table">
+      <thead><tr><th>Rímképlet neve</th><th>Képlet</th><th>Leírás</th><th>Magyar példa</th></tr></thead>
+      <tbody>
+        <tr><td><span class="nev">Páros rím</span></td><td><span class="rimk">a a b b</span></td><td>Egymást követő sorok rímelnek. Egyszerű, pergő hatású.</td><td class="pelda">Petőfi: János vitéz (sok részlete)</td></tr>
+        <tr><td><span class="nev">Keresztrím</span></td><td><span class="rimk">a b a b</span></td><td>Felváltva rímelnek a sorok. A leggyakoribb rímképlet.</td><td class="pelda">Petőfi: Szeptember végén, Arany balladái</td></tr>
+        <tr><td><span class="nev">Ölelkező rím</span></td><td><span class="rimk">a b b a</span></td><td>A külső sorok és a belső sorok rímelnek egymással. Zárt, feszült hatású.</td><td class="pelda">Kosztolányi: Halotti beszéd, szonettekben gyakori</td></tr>
+        <tr><td><span class="nev">Félrím</span></td><td><span class="rimk">x a x a</span></td><td>Csak a páros (vagy páratlan) sorok rímelnek, a többiek szabadok (x).</td><td class="pelda">Népdalok, Petőfi dalai</td></tr>
+        <tr><td><span class="nev">Bokorrím</span></td><td><span class="rimk">a a a a</span></td><td>Több egymást követő sor ugyanarra a hangra rímel.</td><td class="pelda">Arany: Toldi egyes énekei</td></tr>
+        <tr><td><span class="nev">Tercia rima</span></td><td><span class="rimk">a b a / b c b / c d c</span></td><td>Háromsoronként váltakozó rímrendszer, az előző strófa középső rímét folytatja.</td><td class="pelda">Dante: Isteni Színjáték; Babits műfordítása</td></tr>
+        <tr><td><span class="nev">Szonett rímképlete</span><br><span class="tag t4">olasz típus</span></td><td><span class="rimk">a b b a / a b b a / c d c / d c d</span></td><td>14 soros vers. 2 kvartett (4-4 sor) + 2 tercett (3-3 sor). Zárt, feszült gondolati ív.</td><td class="pelda">Kölcsey: Huszt; Juhász Gyula: Anna örök; Radnóti szonettjei</td></tr>
+        <tr><td><span class="nev">Szonett rímképlete</span><br><span class="tag t3">shakespeare-i</span></td><td><span class="rimk">a b a b / c d c d / e f e f / g g</span></td><td>3 kvartett + 1 záró páros rím (couplet). Az utolsó két sor összegez.</td><td class="pelda">Shakespeare szonettjei; Szabó Lőrinc egyes versei</td></tr>
+        <tr><td><span class="nev">Rímtelen (szabad vers)</span></td><td><span class="rimk">—</span></td><td>Nincs rímrendszer, nincs kötött ritmus. A modern líra jellemző formája.</td><td class="pelda">József Attila: Külvárosi éj, Ady kései versei</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2: VERSFORMÁK -->
+  <div class="vers-panel" id="vp2">
+    <table class="data-table">
+      <thead><tr><th>Versforma / strófa</th><th>Felépítés</th><th>Jellemzők</th><th>Magyar példa</th></tr></thead>
+      <tbody>
+        <tr><td class="section-label" colspan="4">Strófaformák</td></tr>
+        <tr><td><span class="nev">Disztichon</span><br><span class="tag t1">antik</span></td><td>Hexameter + pentameter váltakozása</td><td>Az epigramma és elégia klasszikus formája. Antik örökség.</td><td class="pelda">Kölcsey: Huszt, Vörösmarty: Csongor és Tünde egyes részei</td></tr>
+        <tr><td><span class="nev">Szonett</span><br><span class="tag t4">14 sor</span></td><td>4+4+3+3 sor (olasz) vagy 4+4+4+2 (shakespeare-i)</td><td>Feszült gondolati ív, a végén csattanó vagy összegzés. Reneszánsz óta él.</td><td class="pelda">Kölcsey: Huszt; Juhász Gyula: Anna örök; Radnóti eklogái</td></tr>
+        <tr><td><span class="nev">Tercina</span><br><span class="tag t2">3 soros</span></td><td>aba / bcb / cdc… láncoló rím</td><td>Folyamatos, láncoló rímrendszer. Dante tette híressé.</td><td class="pelda">Babits: Dante-fordítás</td></tr>
+        <tr><td><span class="nev">Ottava rima</span><br><span class="tag t3">8 soros</span></td><td>abababcc – 8 sor</td><td>Epikus versformák kedvelt strófája. Ariosto, Tasso használta.</td><td class="pelda">Zrínyi: Szigeti veszedelem strófái (módosítva)</td></tr>
+        <tr><td><span class="nev">Nibelung-strófa</span><br><span class="tag t5">4 soros</span></td><td>4 hosszú sor, cezúrával, páros rím</td><td>Középkori germán epika formája. Arany adaptálta magyarba.</td><td class="pelda">Arany János: Buda halála</td></tr>
+        <tr><td><span class="nev">Hexameter</span><br><span class="tag t1">antik</span></td><td>6 verslábas sor, daktilus és spondeus</td><td>Az eposz alapformája az antikvitástól. Homérosz, Vergilius műveiben.</td><td class="pelda">Vörösmarty: Zalán futása</td></tr>
+        <tr><td class="section-label" colspan="4">Speciális versformák</td></tr>
+        <tr><td><span class="nev">Ecloga</span><br><span class="tag t5">pásztorvers</span></td><td>Párbeszédes pásztorköltészet, hexameterben</td><td>Vergilius nyomán. Radnóti újította fel a háborús körülmények közt.</td><td class="pelda">Radnóti: Hetedik ecloga</td></tr>
+        <tr><td><span class="nev">Rapszódia</span><br><span class="tag t3">szabad</span></td><td>Kötetlen, szenvedélyes, váltakozó hosszúságú sorok</td><td>Szenvedélyes, heves érzelmek kifejezésére. Szabálytalan szerkezet.</td><td class="pelda">Petőfi: Egy gondolat bánt engemet; Vörösmarty: Vén cigány</td></tr>
+        <tr><td><span class="nev">Epigramma</span><br><span class="tag t1">rövid</span></td><td>Általában disztichonban írt rövid, csattanós vers</td><td>Elmés, tömör gondolat, csattanóval zárul.</td><td class="pelda">Kölcsey, Kazinczy epigrammái; Janus Pannonius</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3: RITMUSRENDSZEREK -->
+  <div class="vers-panel" id="vp3">
+    <table class="data-table">
+      <thead><tr><th>Ritmusrendszer</th><th>Alapelve</th><th>Fő verslábak</th><th>Magyar példa</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="nev">Időmértékes verselés</span><br><span class="tag t1">antik</span></td>
+          <td>Hosszú (–) és rövid (∪) szótagok szabályos váltakozása. Görög-latin örökség.</td>
+          <td>
+            <b>Jambus:</b> ∪– (pl. „a ház")<br>
+            <b>Trocheus:</b> –∪ (pl. „ház-ban")<br>
+            <b>Daktilus:</b> –∪∪ (pl. „ház-ba-jön")<br>
+            <b>Anapesztus:</b> ∪∪–<br>
+            <b>Spondeus:</b> ––<br>
+            <b>Pirrihius:</b> ∪∪
+          </td>
+          <td class="pelda">Berzsenyi ódái, Vörösmarty: Zalán futása, Radnóti eklogái</td>
+        </tr>
+        <tr>
+          <td><span class="nev">Hangsúlyos (ütemhangsúlyos) verselés</span><br><span class="tag t5">magyar</span></td>
+          <td>A hangsúlyos és hangsúlytalan szótagok váltakozása. Ősi magyar ritmusérzék.</td>
+          <td>
+            <b>4/4-es osztású sor:</b> „Erre gyere / kis nyulacskám"<br>
+            <b>4/3-as osztású sor:</b> „Közel a tél / már eljött"<br>
+            <b>4/4/4/3-as sor:</b> Alexandrin (pl. Arany eposzai)
+          </td>
+          <td class="pelda">Petőfi: János vitéz, Arany: Toldi, népdalok, kuruc versek</td>
+        </tr>
+        <tr>
+          <td><span class="nev">Szimultán verselés</span><br><span class="tag t2">vegyes</span></td>
+          <td>Az időmértékes és hangsúlyos verselés egyszerre érvényesül ugyanabban a sorban.</td>
+          <td>Mindkét rendszer egyszerre olvasható ki a sorból.</td>
+          <td class="pelda">Petőfi és Arany sok verse szimultán olvasható (pl. Toldi)</td>
+        </tr>
+        <tr>
+          <td><span class="nev">Szabad vers</span><br><span class="tag t3">modern</span></td>
+          <td>Nincs kötött ritmus és nincs rím. A belső zene, szótagszám és hangzás adja a ritmust.</td>
+          <td>Gondolatritmus, anafora, párhuzamos szerkezetek.</td>
+          <td class="pelda">József Attila: Külvárosi éj, A Dunánál; Ady kései versei</td>
+        </tr>
+        <tr>
+          <td><span class="nev">Jambikus lejtés</span><br><span class="tag t4">emelkedő</span></td>
+          <td>∪– lábak sorozata. Emelkedő, dinamikus hatású.</td>
+          <td>5 jambusból álló sor = jambikus pentameter (10 szótag)</td>
+          <td class="pelda">Shakespeare drámai versei, Arany műfordításai</td>
+        </tr>
+        <tr>
+          <td><span class="nev">Trocheikus lejtés</span><br><span class="tag t1">ereszkedő</span></td>
+          <td>–∪ lábak sorozata. Ereszkedő, méltóságteljes hatású.</td>
+          <td>Magyar szavak természetes lejtése trocheikus.</td>
+          <td class="pelda">Vörösmarty: Szózat, számos népdal</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4: STILISZTIKAI ALAKZATOK -->
+  <div class="vers-panel" id="vp4">
+    <table class="data-table">
+      <thead><tr><th>Alakzat / szókép neve</th><th>Meghatározás</th><th>Példa</th></tr></thead>
+      <tbody>
+        <tr><td class="section-label" colspan="3">Szóképek (trópusok)</td></tr>
+        <tr><td><span class="nev">Metafora</span><br><span class="tag t1">névátvitel</span></td><td>Két fogalom hasonlóságán alapuló névátvitel. Az összehasonlítás alapja nem jelenik meg.</td><td class="pelda">„Az élet egy rövid gyertya" (Shakespeare) / „Vagyok, mint minden ember: fenség" (József A.)</td></tr>
+        <tr><td><span class="nev">Hasonlat</span><br><span class="tag t2">összehasonlítás</span></td><td>Két dolog explicit összehasonlítása „mint", „akár", „olyan… mint" kötőszókkal.</td><td class="pelda">„Mint a folyó, olyan az élet" / „Oly távol vagy, mint a csillag" (Arany)</td></tr>
+        <tr><td><span class="nev">Megszemélyesítés</span><br><span class="tag t5">perszonifikáció</span></td><td>Élettelen dolgot vagy fogalmat emberi tulajdonságokkal ruház fel.</td><td class="pelda">„Sírt a hegedű" / „A tél kopogtat az ablakon"</td></tr>
+        <tr><td><span class="nev">Metonímia</span><br><span class="tag t3">érintkezésen alapuló</span></td><td>Térbeli, időbeli vagy ok-okozati összefüggésen alapuló névátvitel.</td><td class="pelda">„Petőfit olvasok" (= Petőfi verseit) / „az egész ház kijött" (= a ház lakói)</td></tr>
+        <tr><td><span class="nev">Szinekdoché</span><br><span class="tag t4">rész az egész helyett</span></td><td>A rész az egész helyett áll, vagy az egész a rész helyett.</td><td class="pelda">„Száz pengő kard csörög" (= száz katona) / „kenyeret keresni" (= megélhetést)</td></tr>
+        <tr><td><span class="nev">Allegória</span><br><span class="tag t1">kiterjesztett metafora</span></td><td>Hosszan kifejtett, végig következetesen fenntartott metafora. Az egész mű átvitt értelmű.</td><td class="pelda">Ady: A magyar Ugaron (az elhanyagolt föld = az elmaradott Magyarország)</td></tr>
+        <tr><td><span class="nev">Szimbólum</span><br><span class="tag t2">jelkép</span></td><td>Egy konkrét dolog elvont fogalmat jelképez. Több értelmezési lehetőség nyílik.</td><td class="pelda">Ady: Léda (= bonyolult szerelem és pusztítás) / galamb = béke</td></tr>
+        <tr><td><span class="nev">Szinesztézia</span><br><span class="tag t5">érzékcsere</span></td><td>Különböző érzékterületek (látás, hallás, tapintás stb.) összekapcsolása.</td><td class="pelda">„Zöld a zene" / „édes illat" / „hangos szín" – Kosztolányinál, Babitsban gyakori</td></tr>
+        <tr><td class="section-label" colspan="3">Gondolatalakzatok</td></tr>
+        <tr><td><span class="nev">Anafora</span><br><span class="tag t4">ismétlés elöl</span></td><td>Sorok vagy mondatok elején ismétlődő szó vagy szókapcsolat.</td><td class="pelda">Illyés: Egy mondat a zsarnokságról – „ahol…" ismétlése végig</td></tr>
+        <tr><td><span class="nev">Epifora</span><br><span class="tag t3">ismétlés hátul</span></td><td>Sorok vagy mondatok végén ismétlődő szó vagy szókapcsolat.</td><td class="pelda">„Tied vagyok, tied, hazám!" (Vörösmarty: Szózat)</td></tr>
+        <tr><td><span class="nev">Chiazmus</span><br><span class="tag t1">keresztbe fordítás</span></td><td>Két párhuzamos tagmondat elemeinek felcserélése: A-B / B-A sorrend.</td><td class="pelda">„Nem azért élünk, hogy együnk – azért eszünk, hogy éljünk"</td></tr>
+        <tr><td><span class="nev">Paradoxon</span><br><span class="tag t2">látszólagos ellentét</span></td><td>Látszólag ellentmondásos, mégis igaznak érzett állítás.</td><td class="pelda">„Élni halva" / „Boldog szomorúság" / Kosztolányi: „Boldog, szomorú dal"</td></tr>
+        <tr><td><span class="nev">Felkiáltás (exclamatio)</span><br><span class="tag t5">érzelmi</span></td><td>Heves érzelmet kifejező, felkiáltójellel vagy anélkül is felismerhető szerkezet.</td><td class="pelda">„Ó, én édes hazám!" (Balassi) / „Magyar, hajnal hasad!" (Vörösmarty)</td></tr>
+        <tr><td><span class="nev">Kérdés (rhetorica)</span><br><span class="tag t4">szónoki</span></td><td>Nem vár valódi választ, a hatást fokozza, bevon.</td><td class="pelda">„Ki viszi át a Szerelmet?" (Nagy László) / „Mivé lesz majd e rom?" (Kölcsey)</td></tr>
+        <tr><td><span class="nev">Inverzió</span><br><span class="tag t3">felcserélés</span></td><td>A szokásos szórend megváltoztatása, kiemelés céljából.</td><td class="pelda">„Hazádnak rendületlenül / Légy híve, ó magyar" (Vörösmarty)</td></tr>
+        <tr><td><span class="nev">Ellipszis</span><br><span class="tag t1">elhagyás</span></td><td>Mondatrész elhagyása, amelyet az összefüggésből értünk.</td><td class="pelda">„Ki korán kel – aranyat lel" (= az a személy, aki korán kel)</td></tr>
+        <tr><td><span class="nev">Eufemizmus</span><br><span class="tag t2">enyhítés</span></td><td>Kellemetlen, durva tartalom finomított, enyhébb kifejezése.</td><td class="pelda">„eltávozott" (= meghalt) / „idős" (= öreg)</td></tr>
+        <tr><td><span class="nev">Irónia</span><br><span class="tag t5">rejtett ellentét</span></td><td>Az ellenkezőjét mondja, mint amit gondol. Rejtett kritika, humor.</td><td class="pelda">Mikszáth műveiben, Karinthy paródiáiban mindenütt jelen van</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /sec-verstani -->
+
+<!-- ============================================================
+     4. SZERZŐK ÉS MŰVEK
+     ============================================================ -->
+<div id="sec-szerzok" class="main-section">
+
+  <div class="section-head">
+    <div class="section-icon green">✍️</div>
+    <div>
+      <div class="section-title-text">Szerzők és művek</div>
+      <div class="section-subtitle">Magyar érettségi – 6 témakör · összes szerző · művek, műfaj, év, témák, szereplők</div>
+    </div>
+  </div>
+
+  <div class="temakor-tabs">
+    <button class="active" onclick="showTemakor(0)">1. Kötelező szerzők</button>
+    <button onclick="showTemakor(1)">2. Régi magyar irodalom</button>
+    <button onclick="showTemakor(2)">3. 19–20. sz. portrék</button>
+    <button onclick="showTemakor(3)">4. Határon túli irodalom</button>
+    <button onclick="showTemakor(4)">5. Színház és dráma</button>
+    <button onclick="showTemakor(5)">6. Világirodalom</button>
+  </div>
+
+  <div id="temakor-panels"></div>
+
+</div><!-- /sec-szerzok -->
+
+</main><!-- /main-content -->
+
+<!-- ============================================================
+     MODAL – műfaj részletek
+     ============================================================ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="closeModal(event)">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
