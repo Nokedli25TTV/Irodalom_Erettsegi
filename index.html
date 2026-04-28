@@ -20,6 +20,8 @@
     <button class="main-tab" onclick="showMain('sec-stilus', this)">🎨 Stílusirányzatok</button>
     <button class="main-tab" onclick="showMain('sec-verstani', this)">🎼 Verstani elemek</button>
     <button class="main-tab" onclick="showMain('sec-szerzok', this)">✍️ Szerzők és művek</button>
+    <button class="main-tab" onclick="showMain('sec-gyakorlo', this)">🎯 Gyakorló</button>
+    <button class="main-tab" onclick="showMain('sec-statisztika', this)">📊 Statisztika</button>
   </nav>
 </header>
 
@@ -454,6 +456,169 @@
   <div id="temakor-panels"></div>
 
 </div><!-- /sec-szerzok -->
+
+<!-- ============================================================
+     GYAKORLÓ SECTION
+     ============================================================ -->
+<div id="sec-gyakorlo" class="main-section gyk-section">
+
+  <!-- ══ SETUP SCREEN ══ -->
+  <div id="gyk-setup" class="gyk-screen active">
+    <div class="gyk-card setup-card">
+      <div class="gyk-header">
+        <div class="gyk-icon">🎯</div>
+        <h2>Szerzők &amp; Művek Gyakorló</h2>
+        <p>Válassz témaköröket, majd indítsd el a kört!</p>
+      </div>
+
+      <div class="setup-block">
+        <div class="setup-label">📚 Témakörök kiválasztása</div>
+        <div class="gyk-filters" id="gyk-filter-btns">
+          <button class="filter-btn active" data-tk="0">1. Kötelező szerzők</button>
+          <button class="filter-btn active" data-tk="1">2. Régi magyar irodalom</button>
+          <button class="filter-btn active" data-tk="2">3. 19–20. sz. portrék</button>
+          <button class="filter-btn active" data-tk="3">4. Határon túli irodalom</button>
+          <button class="filter-btn active" data-tk="4">5. Színház és dráma</button>
+          <button class="filter-btn active" data-tk="5">6. Világirodalom</button>
+        </div>
+      </div>
+
+      <div class="setup-block">
+        <div class="setup-label">🔀 Kérdések sorrendje</div>
+        <div class="gyk-mode-btns">
+          <button class="mode-btn active" data-mode="random">🎲 Véletlenszerű</button>
+          <button class="mode-btn" data-mode="ordered">📖 Korszakonként</button>
+        </div>
+      </div>
+
+      <div class="setup-block">
+        <div class="setup-label">❓ Kérdés típusa</div>
+        <div class="gyk-mode-btns">
+          <button class="qtype-btn active" data-qt="both">🔄 Mindkét irány</button>
+          <button class="qtype-btn" data-qt="muvtol">📖 Műtől → Szerző</button>
+          <button class="qtype-btn" data-qt="szerzotol">✍️ Szerzőtől → Mű</button>
+        </div>
+      </div>
+
+      <div class="setup-block">
+        <div class="setup-label">🔢 Kérdések száma a körben</div>
+        <div class="gyk-qcount-wrap">
+          <button class="qcount-preset" data-n="10">10</button>
+          <button class="qcount-preset" data-n="20">20</button>
+          <button class="qcount-preset" data-n="30">30</button>
+          <button class="qcount-preset active" data-n="0">Mind</button>
+          <input type="number" id="gyk-qcount-input" min="4" max="999" placeholder="Egyéni szám" />
+        </div>
+      </div>
+
+      <div class="setup-info" id="setup-info">
+        Elérhető: <span id="setup-pair-count">0</span> kérdés &nbsp;·&nbsp;
+        Ebből <span id="setup-selected-count">mind</span> lesz a körben
+      </div>
+
+      <button class="gyk-start-btn" id="gyk-start-btn" onclick="gykStart()">▶ Kör indítása</button>
+    </div>
+  </div>
+
+  <!-- ══ QUIZ SCREEN ══ -->
+  <div id="gyk-quiz" class="gyk-screen">
+    <div class="gyk-card quiz-card">
+      <div class="gyk-quiz-topbar">
+        <div class="gyk-progress-bar-wrap">
+          <div class="gyk-progress-bar" id="gyk-progress-bar"></div>
+        </div>
+        <button class="gyk-exit-btn" onclick="gykExitMidRound()" title="Kilépés és mentés">✕ Kilépés</button>
+      </div>
+
+      <div class="gyk-score-row">
+        <span class="gyk-score-good" id="gyk-score-good">✓ 0</span>
+        <span class="gyk-q-counter" id="gyk-q-counter">1 / 1</span>
+        <span class="gyk-score-bad" id="gyk-score-bad">✗ 0</span>
+      </div>
+
+      <div class="gyk-question-wrap">
+        <div class="gyk-question-type" id="gyk-q-type-label"></div>
+        <div class="gyk-question-text" id="gyk-q-text"></div>
+      </div>
+
+      <div class="gyk-options" id="gyk-options"></div>
+      <div class="gyk-feedback" id="gyk-feedback"></div>
+      <button class="gyk-next-btn" id="gyk-next-btn" onclick="gykNext()" style="display:none">Következő →</button>
+    </div>
+  </div>
+
+  <!-- ══ RESULTS SCREEN ══ -->
+  <div id="gyk-results" class="gyk-screen">
+    <div class="gyk-card results-card">
+      <div class="gyk-header">
+        <div id="gyk-result-emoji" class="gyk-icon">🏆</div>
+        <h2 id="gyk-result-title">Kör vége!</h2>
+        <div class="gyk-result-score" id="gyk-result-score"></div>
+      </div>
+
+      <div id="gyk-wrong-section" style="display:none">
+        <div class="setup-label">❌ Elhibázott kérdések</div>
+        <div class="gyk-wrong-list" id="gyk-wrong-list"></div>
+      </div>
+
+      <div class="gyk-result-actions">
+        <button class="gyk-retry-wrong-btn" id="gyk-retry-wrong-btn" onclick="gykRetryWrong()" style="display:none">
+          🔁 Hibák újra (2. kör)
+        </button>
+        <button class="gyk-back-btn" onclick="gykBackToSetup()">
+          🏠 Vissza a beállításokhoz
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /sec-gyakorlo -->
+
+<!-- ============================================================
+     STATISZTIKA SECTION
+     ============================================================ -->
+<div id="sec-statisztika" class="main-section">
+  <div class="stat-page">
+
+    <div class="stat-page-header">
+      <div class="gyk-icon">📊</div>
+      <h2>Statisztikák</h2>
+      <p>Köreink előzményei és teljesítményed szerzők, témakörök szerint</p>
+    </div>
+
+    <!-- Előzmények -->
+    <div class="stat-block">
+      <div class="stat-block-title">🕐 Körök előzményei</div>
+      <div id="stat-rounds-content" class="stat-rounds-content"></div>
+    </div>
+
+    <!-- Szerzők -->
+    <div class="stat-block">
+      <div class="stat-block-title-row">
+        <span>✍️ Teljesítmény szerzőnként</span>
+        <div class="stat-sort-btns">
+          <button class="stat-sort-btn active" data-sort="asc" data-target="authors">↑ Legrosszabb elöl</button>
+          <button class="stat-sort-btn" data-sort="desc" data-target="authors">↓ Legjobb elöl</button>
+        </div>
+      </div>
+      <div id="stat-authors-content"></div>
+    </div>
+
+    <!-- Témakörök -->
+    <div class="stat-block">
+      <div class="stat-block-title-row">
+        <span>📚 Teljesítmény témakörönként</span>
+        <div class="stat-sort-btns">
+          <button class="stat-sort-btn active" data-sort="asc" data-target="temakor">↑ Legrosszabb elöl</button>
+          <button class="stat-sort-btn" data-sort="desc" data-target="temakor">↓ Legjobb elöl</button>
+        </div>
+      </div>
+      <div id="stat-temakor-content"></div>
+    </div>
+
+    <button class="gyk-clear-stats-btn" onclick="gykClearStats()">🗑 Összes statisztika törlése</button>
+  </div>
+</div><!-- /sec-statisztika -->
 
 </main><!-- /main-content -->
 

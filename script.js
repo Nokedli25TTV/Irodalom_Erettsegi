@@ -330,9 +330,544 @@ function renderSzerzok() {
   });
 }
 
+
 /* ============================================================
-   7. INIT
+   8. GYAKORLÓ MODULE  (v2)
    ============================================================ */
+
+/* ── State ── */
+const GYK = {
+  selectedTk: new Set([0,1,2,3,4,5]),
+  mode: 'random',
+  qtype: 'both',
+  qLimit: 0,          // 0 = all
+  questions: [],
+  current: 0,
+  correct: 0,
+  wrong: [],
+  answered: false,
+  roundNum: 1,
+  _wrongPairs: [],
+  _statSort: { authors: 'asc', temakor: 'asc' },
+};
+
+const TK_NAMES = [
+  '1. Kötelező szerzők',
+  '2. Régi magyar irodalom',
+  '3. 19–20. sz. portrék',
+  '4. Határon túli irodalom',
+  '5. Színház és dráma',
+  '6. Világirodalom'
+];
+
+/* ── DOMContentLoaded: wire up all controls ── */
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* Filter buttons */
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tk = parseInt(btn.dataset.tk);
+      btn.classList.toggle('active');
+      if (GYK.selectedTk.has(tk)) GYK.selectedTk.delete(tk);
+      else GYK.selectedTk.add(tk);
+      gykUpdateSetupInfo();
+    });
+  });
+
+  /* Mode buttons */
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      GYK.mode = btn.dataset.mode;
+    });
+  });
+
+  /* Qtype buttons */
+  document.querySelectorAll('.qtype-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.qtype-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      GYK.qtype = btn.dataset.qt;
+      gykUpdateSetupInfo();
+    });
+  });
+
+  /* Preset count buttons */
+  document.querySelectorAll('.qcount-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.qcount-preset').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      GYK.qLimit = parseInt(btn.dataset.n);
+      document.getElementById('gyk-qcount-input').value = '';
+      gykUpdateSetupInfo();
+    });
+  });
+
+  /* Manual number input */
+  const qInput = document.getElementById('gyk-qcount-input');
+  if (qInput) {
+    qInput.addEventListener('input', () => {
+      document.querySelectorAll('.qcount-preset').forEach(b => b.classList.remove('active'));
+      const v = parseInt(qInput.value);
+      GYK.qLimit = (isNaN(v) || v < 1) ? 0 : v;
+      gykUpdateSetupInfo();
+    });
+  }
+
+  /* Stat sort buttons */
+  document.querySelectorAll('.stat-sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      const sort   = btn.dataset.sort;
+      document.querySelectorAll(`.stat-sort-btn[data-target="${target}"]`)
+        .forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      GYK._statSort[target] = sort;
+      gykRenderStatPage();
+    });
+  });
+
+  gykUpdateSetupInfo();
+  gykRenderStatPage();
+});
+
+/* ── Setup info updater ── */
+function gykUpdateSetupInfo() {
+  const pairs = gykBuildPairs(GYK.selectedTk, GYK.qtype);
+  const total = pairs.length;
+  const limit = GYK.qLimit;
+  const inRound = (limit > 0 && limit < total) ? limit : total;
+
+  document.getElementById('setup-pair-count').textContent = total;
+  document.getElementById('setup-selected-count').textContent =
+    (limit > 0 && limit < total) ? limit : 'mind';
+  document.getElementById('gyk-start-btn').disabled = total < 4;
+}
+
+/* ── Build question pairs ── */
+function gykBuildPairs(selectedTk, qtype) {
+  const pairs = [];
+  adatok.forEach(sz => {
+    if (!selectedTk.has(sz.temakor)) return;
+    sz.muvek.forEach(m => {
+      if (qtype === 'both' || qtype === 'muvtol')
+        pairs.push({ type:'muvtol', author: sz.nev, title: m.cim, temakor: sz.temakor });
+      if (qtype === 'both' || qtype === 'szerzotol')
+        pairs.push({ type:'szerzotol', author: sz.nev, title: m.cim, temakor: sz.temakor });
+    });
+  });
+  return pairs;
+}
+
+/* ── Shuffle helper ── */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ── Build questions with wrong options ── */
+function gykBuildQuestions(pairs) {
+  const allAuthors = [...new Set(
+    adatok.filter(sz => GYK.selectedTk.has(sz.temakor)).map(sz => sz.nev)
+  )];
+  const allTitles = [...new Set(
+    adatok.filter(sz => GYK.selectedTk.has(sz.temakor)).flatMap(sz => sz.muvek.map(m => m.cim))
+  )];
+
+  // Ensure enough wrong options even if pool is small
+  const authorPool = allAuthors.length > 3 ? allAuthors :
+    [...new Set(adatok.map(sz => sz.nev))];
+  const titlePool = allTitles.length > 3 ? allTitles :
+    [...new Set(adatok.flatMap(sz => sz.muvek.map(m => m.cim)))];
+
+  return pairs.map(p => {
+    if (p.type === 'muvtol') {
+      const wrongs = shuffle(authorPool.filter(a => a !== p.author)).slice(0, 3);
+      const options = shuffle([p.author, ...wrongs]);
+      return { ...p, options, correct: p.author };
+    } else {
+      const wrongs = shuffle(titlePool.filter(t => t !== p.title)).slice(0, 3);
+      const options = shuffle([p.title, ...wrongs]);
+      return { ...p, options, correct: p.title };
+    }
+  });
+}
+
+/* ── START ── */
+function gykStart(pairs) {
+  GYK.correct = 0;
+  GYK.wrong = [];
+  GYK.current = 0;
+  GYK.answered = false;
+
+  if (!pairs) {
+    pairs = gykBuildPairs(GYK.selectedTk, GYK.qtype);
+    if (GYK.mode === 'random') {
+      pairs = shuffle(pairs);
+    } else {
+      const grouped = {};
+      pairs.forEach(p => {
+        if (!grouped[p.temakor]) grouped[p.temakor] = [];
+        grouped[p.temakor].push(p);
+      });
+      pairs = [0,1,2,3,4,5].flatMap(tk => shuffle(grouped[tk] || []));
+    }
+    // Apply limit
+    if (GYK.qLimit > 0 && GYK.qLimit < pairs.length) {
+      pairs = pairs.slice(0, GYK.qLimit);
+    }
+  }
+
+  GYK.questions = gykBuildQuestions(pairs);
+  gykShowScreen('gyk-quiz');
+  gykRenderQuestion();
+}
+
+/* ── Retry only wrong answers ── */
+function gykRetryWrong() {
+  GYK.roundNum++;
+  const seen = new Set();
+  GYK._wrongPairs = GYK.wrong
+    .filter(w => {
+      const k = w.type + '|' + w.author + '|' + w.title;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    })
+    .map(w => ({ type: w.type, author: w.author, title: w.title, temakor: 0 }));
+
+  gykStart(shuffle(GYK._wrongPairs));
+}
+
+/* ── Exit mid-round, save partial results ── */
+function gykExitMidRound() {
+  if (!confirm('Biztosan kilépsz? Az eddigi válaszaid elmentjük a statisztikába.')) return;
+
+  // Only count questions that were answered so far
+  const answered = GYK.current; // number of questions answered (current index = next to answer)
+  const savedCorrect = GYK.correct;
+  const savedWrong = GYK.wrong;
+
+  if (answered > 0) {
+    gykSaveRound(savedCorrect, answered, savedWrong, true);
+    gykRenderStatPage();
+  }
+
+  GYK.roundNum = 1;
+  gykShowScreen('gyk-setup');
+  gykUpdateSetupInfo();
+}
+
+/* ── Render question ── */
+function gykRenderQuestion() {
+  const q = GYK.questions[GYK.current];
+  const total = GYK.questions.length;
+
+  document.getElementById('gyk-progress-bar').style.width = (GYK.current / total * 100) + '%';
+  document.getElementById('gyk-q-counter').textContent = (GYK.current + 1) + ' / ' + total;
+  document.getElementById('gyk-score-good').textContent = '✓ ' + GYK.correct;
+  document.getElementById('gyk-score-bad').textContent  = '✗ ' + GYK.wrong.length;
+
+  document.getElementById('gyk-q-type-label').textContent =
+    q.type === 'muvtol' ? '📖 Ki írta ezt a művet?' : '✍️ Melyik mű a szerzőé?';
+
+  document.getElementById('gyk-q-text').textContent =
+    q.type === 'muvtol' ? `„${q.title}"` : q.author;
+
+  const optEl = document.getElementById('gyk-options');
+  optEl.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'gyk-option-btn';
+    btn.textContent = opt;
+    btn.onclick = () => gykAnswer(opt, btn);
+    optEl.appendChild(btn);
+  });
+
+  document.getElementById('gyk-feedback').innerHTML = '';
+  document.getElementById('gyk-feedback').className = 'gyk-feedback';
+  document.getElementById('gyk-next-btn').style.display = 'none';
+  GYK.answered = false;
+}
+
+/* ── Answer handler ── */
+function gykAnswer(chosen, btn) {
+  if (GYK.answered) return;
+  GYK.answered = true;
+
+  const q = GYK.questions[GYK.current];
+  const isCorrect = chosen === q.correct;
+
+  document.querySelectorAll('.gyk-option-btn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === q.correct) b.classList.add('correct');
+    else if (b === btn && !isCorrect) b.classList.add('wrong');
+  });
+
+  if (isCorrect) {
+    GYK.correct++;
+    document.getElementById('gyk-feedback').innerHTML = '<span class="fb-ok">✓ Helyes!</span>';
+    document.getElementById('gyk-feedback').className = 'gyk-feedback fb-ok-wrap';
+  } else {
+    GYK.wrong.push({
+      author: q.author, title: q.title, type: q.type,
+      yourAnswer: chosen, correctAnswer: q.correct
+    });
+    const hint = q.type === 'muvtol'
+      ? `A helyes válasz: <strong>${q.correct}</strong>`
+      : `A helyes mű: <strong>${q.correct}</strong>`;
+    document.getElementById('gyk-feedback').innerHTML = `<span class="fb-bad">✗ Sajnos nem!</span> ${hint}`;
+    document.getElementById('gyk-feedback').className = 'gyk-feedback fb-bad-wrap';
+  }
+
+  document.getElementById('gyk-score-good').textContent = '✓ ' + GYK.correct;
+  document.getElementById('gyk-score-bad').textContent  = '✗ ' + GYK.wrong.length;
+  document.getElementById('gyk-next-btn').style.display = 'block';
+}
+
+/* ── Next question ── */
+function gykNext() {
+  GYK.current++;
+  if (GYK.current >= GYK.questions.length) {
+    gykFinishRound();
+  } else {
+    gykRenderQuestion();
+  }
+}
+
+/* ── Finish round ── */
+function gykFinishRound() {
+  const total = GYK.questions.length;
+  const pct   = Math.round(GYK.correct / total * 100);
+
+  gykSaveRound(GYK.correct, total, GYK.wrong, false);
+  gykRenderStatPage();
+
+  const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🌟' : pct >= 60 ? '👍' : pct >= 40 ? '💪' : '📖';
+  document.getElementById('gyk-result-emoji').textContent = emoji;
+  document.getElementById('gyk-result-title').textContent = GYK.roundNum + '. kör vége!';
+  document.getElementById('gyk-result-score').innerHTML =
+    `<span class="res-correct">${GYK.correct}</span> / ${total} helyes &nbsp;·&nbsp; <span class="res-pct">${pct}%</span>`;
+
+  const wrongSection = document.getElementById('gyk-wrong-section');
+  const wrongList    = document.getElementById('gyk-wrong-list');
+  if (GYK.wrong.length > 0) {
+    wrongSection.style.display = 'block';
+    wrongList.innerHTML = GYK.wrong.map(w => `
+      <div class="wrong-item">
+        <div class="wrong-pair"><em>„${w.title}"</em> — <strong>${w.author}</strong></div>
+        <div class="wrong-detail">Te: <span class="wrong-your">${w.yourAnswer}</span></div>
+      </div>
+    `).join('');
+    document.getElementById('gyk-retry-wrong-btn').style.display =
+      GYK.wrong.length >= 1 ? 'block' : 'none';
+    document.getElementById('gyk-retry-wrong-btn').textContent =
+      `🔁 Hibák újra (${GYK.roundNum + 1}. kör)`;
+  } else {
+    wrongSection.style.display = 'none';
+    document.getElementById('gyk-retry-wrong-btn').style.display = 'none';
+  }
+
+  gykShowScreen('gyk-results');
+}
+
+function gykBackToSetup() {
+  GYK.roundNum = 1;
+  gykShowScreen('gyk-setup');
+  gykUpdateSetupInfo();
+}
+
+/* ── Screen switching ── */
+function gykShowScreen(id) {
+  document.querySelectorAll('.gyk-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ══════════════════════════════════════════
+   STATISTICS  (localStorage)
+   ══════════════════════════════════════════ */
+const STATS_KEY = 'irodalom_gyk_stats_v2';
+
+function gykLoadStats() {
+  try {
+    return JSON.parse(localStorage.getItem(STATS_KEY)) ||
+      { rounds: [], authors: {}, temakor: {} };
+  } catch(e) {
+    return { rounds: [], authors: {}, temakor: {} };
+  }
+}
+
+function gykSaveRound(correct, total, wrong, partial) {
+  const stats = gykLoadStats();
+  const now   = new Date();
+
+  // Build set of wrong question keys
+  const wrongKeys = new Set(wrong.map(w => `${w.author}|${w.title}|${w.type}`));
+
+  // Slice to answered questions only
+  const answeredQs = GYK.questions.slice(0, GYK.current + (partial ? 0 : 0));
+  // All answered questions = indices 0..current-1 when partial, or all when finished
+  const qs = partial
+    ? GYK.questions.slice(0, GYK.current)
+    : GYK.questions;
+
+  qs.forEach(q => {
+    // Author stats
+    if (!stats.authors[q.author]) stats.authors[q.author] = { asked:0, correct:0, temakor: q.temakor };
+    stats.authors[q.author].asked++;
+    stats.authors[q.author].temakor = q.temakor;
+
+    const key = `${q.author}|${q.title}|${q.type}`;
+    if (!wrongKeys.has(key)) stats.authors[q.author].correct++;
+
+    // Temakor stats — use original temakor from author data
+    const tkIdx = adatok.find(a => a.nev === q.author)?.temakor ?? 0;
+    const tkKey = tkIdx.toString();
+    if (!stats.temakor[tkKey]) stats.temakor[tkKey] = { asked:0, correct:0, name: TK_NAMES[tkIdx] };
+    stats.temakor[tkKey].asked++;
+    if (!wrongKeys.has(key)) stats.temakor[tkKey].correct++;
+  });
+
+  const dateStr = now.toLocaleDateString('hu-HU') + ' ' +
+    now.toLocaleTimeString('hu-HU', {hour:'2-digit',minute:'2-digit'});
+
+  stats.rounds.unshift({
+    date: dateStr,
+    correct, total,
+    pct: Math.round(correct / total * 100),
+    wrongCount: wrong.length,
+    partial: !!partial
+  });
+  if (stats.rounds.length > 30) stats.rounds = stats.rounds.slice(0, 30);
+
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+}
+
+function gykClearStats() {
+  if (confirm('Biztosan törlöd az összes statisztikát?')) {
+    localStorage.removeItem(STATS_KEY);
+    gykRenderStatPage();
+  }
+}
+
+/* ── Render the full Statisztika page ── */
+function gykRenderStatPage() {
+  const stats = gykLoadStats();
+  renderStatRounds(stats.rounds);
+  renderStatAuthors(stats.authors, GYK._statSort.authors);
+  renderStatTemakor(stats.temakor, GYK._statSort.temakor);
+}
+
+function pctClass(p) { return p >= 80 ? 'good' : p >= 50 ? 'mid' : 'bad'; }
+function pctBar(p) {
+  const col = p >= 80 ? '#3B6D11' : p >= 50 ? '#c9a96e' : '#b34040';
+  return `<div class="stats-bar-wrap"><div class="stats-bar" style="width:${p}%;background:${col}"></div></div>`;
+}
+
+function renderStatRounds(rounds) {
+  const el = document.getElementById('stat-rounds-content');
+  if (!el) return;
+  if (!rounds || rounds.length === 0) {
+    el.innerHTML = '<p class="stats-empty">Még nincs adat. Játssz egy kört!</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="stats-table">
+      <thead><tr><th>Dátum</th><th>Eredmény</th><th>%</th><th></th></tr></thead>
+      <tbody>
+        ${rounds.map(r => `
+          <tr>
+            <td style="white-space:nowrap">${r.date}</td>
+            <td><strong>${r.correct} / ${r.total}</strong></td>
+            <td>
+              ${pctBar(r.pct)}
+              <span class="stats-pct ${pctClass(r.pct)}">${r.pct}%</span>
+            </td>
+            <td>${r.partial ? '<span class="partial-badge">félbehagyott</span>' : ''}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderStatAuthors(authors, sort) {
+  const el = document.getElementById('stat-authors-content');
+  if (!el) return;
+  const entries = Object.entries(authors || {})
+    .filter(([,v]) => v.asked > 0)
+    .map(([name, v]) => ({
+      name,
+      pct: Math.round(v.correct / v.asked * 100),
+      correct: v.correct,
+      asked: v.asked
+    }));
+
+  if (entries.length === 0) {
+    el.innerHTML = '<p class="stats-empty">Még nincs adat.</p>'; return;
+  }
+
+  entries.sort((a,b) => sort === 'asc' ? a.pct - b.pct : b.pct - a.pct);
+
+  el.innerHTML = `
+    <table class="stats-table">
+      <thead><tr><th>Szerző</th><th>Helyes</th><th>Arány</th></tr></thead>
+      <tbody>
+        ${entries.map(a => `
+          <tr>
+            <td>${a.name}</td>
+            <td>${a.correct} / ${a.asked}</td>
+            <td>
+              ${pctBar(a.pct)}
+              <span class="stats-pct ${pctClass(a.pct)}">${a.pct}%</span>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderStatTemakor(temakor, sort) {
+  const el = document.getElementById('stat-temakor-content');
+  if (!el) return;
+  const entries = Object.entries(temakor || {})
+    .filter(([,v]) => v.asked > 0)
+    .map(([key, v]) => ({
+      name: v.name || TK_NAMES[parseInt(key)] || key,
+      pct: Math.round(v.correct / v.asked * 100),
+      correct: v.correct,
+      asked: v.asked
+    }));
+
+  if (entries.length === 0) {
+    el.innerHTML = '<p class="stats-empty">Még nincs adat.</p>'; return;
+  }
+
+  entries.sort((a,b) => sort === 'asc' ? a.pct - b.pct : b.pct - a.pct);
+
+  el.innerHTML = `
+    <table class="stats-table">
+      <thead><tr><th>Témakör</th><th>Helyes</th><th>Arány</th></tr></thead>
+      <tbody>
+        ${entries.map(t => `
+          <tr>
+            <td>${t.name}</td>
+            <td>${t.correct} / ${t.asked}</td>
+            <td>
+              ${pctBar(t.pct)}
+              <span class="stats-pct ${pctClass(t.pct)}">${t.pct}%</span>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   // Műfajok
   renderCards(epikaData, 'epika-cards', 'epika');
