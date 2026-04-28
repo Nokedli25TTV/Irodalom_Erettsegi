@@ -473,13 +473,17 @@
 
       <div class="setup-block">
         <div class="setup-label">📚 Témakörök kiválasztása</div>
-        <div class="gyk-filters" id="gyk-filter-btns">
-          <button class="filter-btn active" data-tk="0">1. Kötelező szerzők</button>
-          <button class="filter-btn active" data-tk="1">2. Régi magyar irodalom</button>
-          <button class="filter-btn active" data-tk="2">3. 19–20. sz. portrék</button>
-          <button class="filter-btn active" data-tk="3">4. Határon túli irodalom</button>
-          <button class="filter-btn active" data-tk="4">5. Színház és dráma</button>
-          <button class="filter-btn active" data-tk="5">6. Világirodalom</button>
+        <div class="gyk-filters" id="gyk-filter-btns"></div>
+        <div class="author-submenu-panel" id="author-submenu-panel">
+          <div class="submenu-header">
+            <span class="submenu-title" id="submenu-title"></span>
+            <div class="submenu-actions">
+              <button class="submenu-all-btn" onclick="gykSubmenuSelectAll()">Összes</button>
+              <button class="submenu-none-btn" onclick="gykSubmenuDeselectAll()">Egyiksem</button>
+              <button class="submenu-close-btn" onclick="gykCloseSubmenu()">✕</button>
+            </div>
+          </div>
+          <div class="author-chips" id="author-chips-container"></div>
         </div>
       </div>
 
@@ -494,9 +498,9 @@
       <div class="setup-block">
         <div class="setup-label">❓ Kérdés típusa</div>
         <div class="gyk-mode-btns">
-          <button class="qtype-btn active" data-qt="both">🔄 Mindkét irány</button>
-          <button class="qtype-btn" data-qt="muvtol">📖 Műtől → Szerző</button>
-          <button class="qtype-btn" data-qt="szerzotol">✍️ Szerzőtől → Mű</button>
+          <button class="qtype-btn active" data-qt="muvtol">📖 Műtől → Szerző</button>
+          <button class="qtype-btn active" data-qt="szerzotol">✍️ Szerzőtől → Mű</button>
+          <button class="qtype-btn" data-qt="evszam">📅 Mikor íródott?</button>
         </div>
       </div>
 

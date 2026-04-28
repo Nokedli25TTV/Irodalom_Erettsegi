@@ -337,9 +337,10 @@ function renderSzerzok() {
 
 /* ── State ── */
 const GYK = {
-  selectedTk: new Set([0,1,2,3,4,5]),
+  selectedAuthors: new Set(), // filled after adatok is ready
+  openSubmenuTk: -1,           // which topic's submenu is shown (-1 = none)
   mode: 'random',
-  qtype: 'both',
+  qtypes: new Set(['muvtol','szerzotol']),  // multi-select
   qLimit: 0,          // 0 = all
   questions: [],
   current: 0,
@@ -365,16 +366,11 @@ const TK_NAMES = [
 /* ── DOMContentLoaded: wire up all controls ── */
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* Filter buttons */
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tk = parseInt(btn.dataset.tk);
-      btn.classList.toggle('active');
-      if (GYK.selectedTk.has(tk)) GYK.selectedTk.delete(tk);
-      else GYK.selectedTk.add(tk);
-      gykUpdateSetupInfo();
-    });
-  });
+  /* Initialize selectedAuthors as empty (nothing selected by default) */
+  GYK.selectedAuthors = new Set();
+
+  /* Render filter area */
+  gykRenderFilterArea();
 
   /* Mode buttons */
   document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -385,12 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* Qtype buttons */
+  /* Qtype buttons – multi-select toggle */
   document.querySelectorAll('.qtype-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.qtype-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      GYK.qtype = btn.dataset.qt;
+      const qt = btn.dataset.qt;
+      if (GYK.qtypes.has(qt)) {
+        // Don't allow deselecting the last one
+        if (GYK.qtypes.size === 1) return;
+        GYK.qtypes.delete(qt);
+        btn.classList.remove('active');
+      } else {
+        GYK.qtypes.add(qt);
+        btn.classList.add('active');
+      }
       gykUpdateSetupInfo();
     });
   });
@@ -430,16 +433,124 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* Close submenu when clicking outside */
+  document.addEventListener('click', (e) => {
+    // If the clicked element was detached by a re-render, ignore
+    if (!document.contains(e.target)) return;
+    if (GYK.openSubmenuTk >= 0 &&
+        !e.target.closest('#gyk-filter-btns') &&
+        !e.target.closest('#author-submenu-panel')) {
+      GYK.openSubmenuTk = -1;
+      gykRenderFilterArea();
+    }
+  });
+
   gykUpdateSetupInfo();
   gykRenderStatPage();
 });
 
+/* ── Render filter area (topic buttons + author submenu) ── */
+function gykRenderFilterArea() {
+  const container = document.getElementById('gyk-filter-btns');
+  if (!container) return;
+
+  // Build per-topic author lists
+  const authorsPerTk = {};
+  TK_NAMES.forEach((_, tk) => {
+    authorsPerTk[tk] = adatok.filter(sz => sz.temakor === tk).map(sz => sz.nev);
+  });
+
+  container.innerHTML = TK_NAMES.map((name, tk) => {
+    const authors = authorsPerTk[tk];
+    const selCount = authors.filter(a => GYK.selectedAuthors.has(a)).length;
+    const total    = authors.length;
+    const isActive  = selCount > 0;
+    const isPartial = selCount > 0 && selCount < total;
+
+    let cls = 'filter-btn';
+    if (isActive)  cls += ' active';
+    if (isPartial) cls += ' partial';
+
+    const countLabel = isPartial ? ` <em class="filt-count">(${selCount}/${total})</em>` : '';
+    const arrow = GYK.openSubmenuTk === tk ? '▲' : '▼';
+
+    return `<button class="${cls}" onclick="gykClickTopic(${tk})">${name}${countLabel} <span class="filt-arrow">${arrow}</span></button>`;
+  }).join('');
+
+  // Render submenu panel
+  const panel = document.getElementById('author-submenu-panel');
+  const chips  = document.getElementById('author-chips-container');
+  const titleEl = document.getElementById('submenu-title');
+  if (!panel) return;
+
+  if (GYK.openSubmenuTk >= 0) {
+    panel.classList.add('open');
+    titleEl.textContent = TK_NAMES[GYK.openSubmenuTk];
+    const authors = authorsPerTk[GYK.openSubmenuTk];
+    chips.innerHTML = authors.map(a => {
+      const sel = GYK.selectedAuthors.has(a);
+      return `<button class="author-chip${sel ? ' active' : ''}" onclick="gykToggleAuthor('${a.replace(/'/g,"\\'")}')">
+        ${sel ? '✓ ' : ''}${a}
+      </button>`;
+    }).join('');
+  } else {
+    panel.classList.remove('open');
+    chips.innerHTML = '';
+  }
+}
+
+function gykClickTopic(tk) {
+  const authors = adatok.filter(sz => sz.temakor === tk).map(sz => sz.nev);
+  const selCount = authors.filter(a => GYK.selectedAuthors.has(a)).length;
+
+  if (GYK.openSubmenuTk === tk) {
+    // Submenu already open for this topic → close submenu (but keep selection)
+    GYK.openSubmenuTk = -1;
+  } else if (selCount === 0) {
+    // Topic was OFF → turn ON all authors and open submenu
+    authors.forEach(a => GYK.selectedAuthors.add(a));
+    GYK.openSubmenuTk = tk;
+  } else {
+    // Topic is active (some or all selected) → just open the submenu
+    GYK.openSubmenuTk = tk;
+  }
+
+  gykRenderFilterArea();
+  gykUpdateSetupInfo();
+}
+
+function gykToggleAuthor(nev) {
+  if (GYK.selectedAuthors.has(nev)) GYK.selectedAuthors.delete(nev);
+  else GYK.selectedAuthors.add(nev);
+  gykRenderFilterArea();
+  gykUpdateSetupInfo();
+}
+
+function gykSubmenuSelectAll() {
+  if (GYK.openSubmenuTk < 0) return;
+  adatok.filter(sz => sz.temakor === GYK.openSubmenuTk).forEach(sz => GYK.selectedAuthors.add(sz.nev));
+  gykRenderFilterArea();
+  gykUpdateSetupInfo();
+}
+
+function gykSubmenuDeselectAll() {
+  if (GYK.openSubmenuTk < 0) return;
+  adatok.filter(sz => sz.temakor === GYK.openSubmenuTk).forEach(sz => GYK.selectedAuthors.delete(sz.nev));
+  // Keep submenu open so user can re-select authors
+  gykRenderFilterArea();
+  gykUpdateSetupInfo();
+}
+
+function gykCloseSubmenu() {
+  GYK.openSubmenuTk = -1;
+  gykRenderFilterArea();
+}
+
 /* ── Setup info updater ── */
 function gykUpdateSetupInfo() {
-  const pairs = gykBuildPairs(GYK.selectedTk, GYK.qtype);
+  const pairs = gykBuildPairs(GYK.selectedAuthors, GYK.qtypes);
   const total = pairs.length;
   const limit = GYK.qLimit;
-  const inRound = (limit > 0 && limit < total) ? limit : total;
 
   document.getElementById('setup-pair-count').textContent = total;
   document.getElementById('setup-selected-count').textContent =
@@ -448,15 +559,17 @@ function gykUpdateSetupInfo() {
 }
 
 /* ── Build question pairs ── */
-function gykBuildPairs(selectedTk, qtype) {
+function gykBuildPairs(selectedAuthors, qtypes) {
   const pairs = [];
   adatok.forEach(sz => {
-    if (!selectedTk.has(sz.temakor)) return;
+    if (!selectedAuthors.has(sz.nev)) return;
     sz.muvek.forEach(m => {
-      if (qtype === 'both' || qtype === 'muvtol')
-        pairs.push({ type:'muvtol', author: sz.nev, title: m.cim, temakor: sz.temakor });
-      if (qtype === 'both' || qtype === 'szerzotol')
-        pairs.push({ type:'szerzotol', author: sz.nev, title: m.cim, temakor: sz.temakor });
+      if (qtypes.has('muvtol'))
+        pairs.push({ type:'muvtol',    author: sz.nev, title: m.cim, ev: m.ev, temakor: sz.temakor });
+      if (qtypes.has('szerzotol'))
+        pairs.push({ type:'szerzotol', author: sz.nev, title: m.cim, ev: m.ev, temakor: sz.temakor });
+      if (qtypes.has('evszam'))
+        pairs.push({ type:'evszam',    author: sz.nev, title: m.cim, ev: m.ev, temakor: sz.temakor });
     });
   });
   return pairs;
@@ -475,10 +588,13 @@ function shuffle(arr) {
 /* ── Build questions with wrong options ── */
 function gykBuildQuestions(pairs) {
   const allAuthors = [...new Set(
-    adatok.filter(sz => GYK.selectedTk.has(sz.temakor)).map(sz => sz.nev)
+    adatok.filter(sz => GYK.selectedAuthors.has(sz.nev)).map(sz => sz.nev)
   )];
   const allTitles = [...new Set(
-    adatok.filter(sz => GYK.selectedTk.has(sz.temakor)).flatMap(sz => sz.muvek.map(m => m.cim))
+    adatok.filter(sz => GYK.selectedAuthors.has(sz.nev)).flatMap(sz => sz.muvek.map(m => m.cim))
+  )];
+  const allYears = [...new Set(
+    adatok.filter(sz => GYK.selectedAuthors.has(sz.nev)).flatMap(sz => sz.muvek.map(m => m.ev))
   )];
 
   // Ensure enough wrong options even if pool is small
@@ -486,16 +602,41 @@ function gykBuildQuestions(pairs) {
     [...new Set(adatok.map(sz => sz.nev))];
   const titlePool = allTitles.length > 3 ? allTitles :
     [...new Set(adatok.flatMap(sz => sz.muvek.map(m => m.cim)))];
+  const yearPool = allYears.length > 3 ? allYears :
+    [...new Set(adatok.flatMap(sz => sz.muvek.map(m => m.ev)))];
 
   return pairs.map(p => {
     if (p.type === 'muvtol') {
-      const wrongs = shuffle(authorPool.filter(a => a !== p.author)).slice(0, 3);
+      let wrongPool = authorPool.filter(a => a !== p.author);
+      if (wrongPool.length < 3) {
+        wrongPool = [...new Set(adatok.map(sz => sz.nev))].filter(a => a !== p.author);
+      }
+      const wrongs = shuffle(wrongPool).slice(0, 3);
       const options = shuffle([p.author, ...wrongs]);
       return { ...p, options, correct: p.author };
-    } else {
-      const wrongs = shuffle(titlePool.filter(t => t !== p.title)).slice(0, 3);
+    } else if (p.type === 'szerzotol') {
+      // Exclude ALL titles by this author to avoid multiple-correct-answer situations
+      const authorTitles = new Set(
+        adatok.find(sz => sz.nev === p.author)?.muvek.map(m => m.cim) || []
+      );
+      let wrongPool = titlePool.filter(t => !authorTitles.has(t));
+      // Fallback to global pool if not enough wrong options
+      if (wrongPool.length < 3) {
+        const globalTitles = [...new Set(adatok.flatMap(sz => sz.muvek.map(m => m.cim)))];
+        wrongPool = globalTitles.filter(t => !authorTitles.has(t));
+      }
+      const wrongs = shuffle(wrongPool).slice(0, 3);
       const options = shuffle([p.title, ...wrongs]);
       return { ...p, options, correct: p.title };
+    } else {
+      // evszam: exclude years that are also correct for this work
+      let wrongPool = yearPool.filter(y => y !== p.ev);
+      if (wrongPool.length < 3) {
+        wrongPool = [...new Set(adatok.flatMap(sz => sz.muvek.map(m => m.ev)))].filter(y => y !== p.ev);
+      }
+      const wrongs = shuffle(wrongPool).slice(0, 3);
+      const options = shuffle([p.ev, ...wrongs]);
+      return { ...p, options, correct: p.ev };
     }
   });
 }
@@ -513,7 +654,7 @@ function gykStart(pairs) {
     GYK.roundNum = 1;
     GYK.session = { correct: 0, total: 0, allQuestions: [], wrong: [] };
 
-    pairs = gykBuildPairs(GYK.selectedTk, GYK.qtype);
+    pairs = gykBuildPairs(GYK.selectedAuthors, GYK.qtypes);
     if (GYK.mode === 'random') {
       pairs = shuffle(pairs);
     } else {
@@ -581,10 +722,14 @@ function gykRenderQuestion() {
   document.getElementById('gyk-score-bad').textContent  = '✗ ' + GYK.wrong.length;
 
   document.getElementById('gyk-q-type-label').textContent =
-    q.type === 'muvtol' ? '📖 Ki írta ezt a művet?' : '✍️ Melyik mű a szerzőé?';
+    q.type === 'muvtol'    ? '📖 Ki írta ezt a művet?' :
+    q.type === 'szerzotol' ? '✍️ Melyik mű a szerzőé?' :
+                             '📅 Mikor íródott ez a mű?';
 
   document.getElementById('gyk-q-text').textContent =
-    q.type === 'muvtol' ? `„${q.title}"` : q.author;
+    q.type === 'muvtol'    ? `„${q.title}"` :
+    q.type === 'szerzotol' ? q.author :
+                             `„${q.title}"\n— ${q.author}`;
 
   const optEl = document.getElementById('gyk-options');
   optEl.innerHTML = '';
@@ -627,7 +772,9 @@ function gykAnswer(chosen, btn) {
     });
     const hint = q.type === 'muvtol'
       ? `A helyes válasz: <strong>${q.correct}</strong>`
-      : `A helyes mű: <strong>${q.correct}</strong>`;
+      : q.type === 'szerzotol'
+      ? `A helyes mű: <strong>${q.correct}</strong>`
+      : `A helyes évszám: <strong>${q.correct}</strong>`;
     document.getElementById('gyk-feedback').innerHTML = `<span class="fb-bad">✗ Sajnos nem!</span> ${hint}`;
     document.getElementById('gyk-feedback').className = 'gyk-feedback fb-bad-wrap';
   }
