@@ -349,6 +349,8 @@ const GYK = {
   roundNum: 1,
   _wrongPairs: [],
   _statSort: { authors: 'asc', temakor: 'asc' },
+  // Session accumulators (reset only on fresh start, not on retry)
+  session: { correct: 0, total: 0, allQuestions: [], wrong: [] },
 };
 
 const TK_NAMES = [
@@ -505,7 +507,12 @@ function gykStart(pairs) {
   GYK.current = 0;
   GYK.answered = false;
 
-  if (!pairs) {
+  const isFresh = !pairs; // fresh start = no pairs passed in
+  if (isFresh) {
+    // Reset session accumulators for a brand new session
+    GYK.roundNum = 1;
+    GYK.session = { correct: 0, total: 0, allQuestions: [], wrong: [] };
+
     pairs = gykBuildPairs(GYK.selectedTk, GYK.qtype);
     if (GYK.mode === 'random') {
       pairs = shuffle(pairs);
@@ -517,7 +524,6 @@ function gykStart(pairs) {
       });
       pairs = [0,1,2,3,4,5].flatMap(tk => shuffle(grouped[tk] || []));
     }
-    // Apply limit
     if (GYK.qLimit > 0 && GYK.qLimit < pairs.length) {
       pairs = pairs.slice(0, GYK.qLimit);
     }
@@ -547,17 +553,19 @@ function gykRetryWrong() {
 function gykExitMidRound() {
   if (!confirm('Biztosan kilépsz? Az eddigi válaszaid elmentjük a statisztikába.')) return;
 
-  // Only count questions that were answered so far
-  const answered = GYK.current; // number of questions answered (current index = next to answer)
-  const savedCorrect = GYK.correct;
-  const savedWrong = GYK.wrong;
-
-  if (answered > 0) {
-    gykSaveRound(savedCorrect, answered, savedWrong, true);
+  const answeredQs = GYK.questions.slice(0, GYK.current);
+  if (answeredQs.length > 0 || GYK.session.total > 0) {
+    // Add the partial round to session
+    GYK.session.correct     += GYK.correct;
+    GYK.session.total       += answeredQs.length;
+    GYK.session.allQuestions = GYK.session.allQuestions.concat(answeredQs);
+    GYK.session.wrong        = GYK.wrong;
+    gykSaveSession(true);
     gykRenderStatPage();
   }
 
   GYK.roundNum = 1;
+  GYK.session = { correct: 0, total: 0, allQuestions: [], wrong: [] };
   gykShowScreen('gyk-setup');
   gykUpdateSetupInfo();
 }
@@ -644,8 +652,11 @@ function gykFinishRound() {
   const total = GYK.questions.length;
   const pct   = Math.round(GYK.correct / total * 100);
 
-  gykSaveRound(GYK.correct, total, GYK.wrong, false);
-  gykRenderStatPage();
+  // Accumulate into session (don't save yet)
+  GYK.session.correct     += GYK.correct;
+  GYK.session.total       += total;
+  GYK.session.allQuestions = GYK.session.allQuestions.concat(GYK.questions);
+  GYK.session.wrong        = GYK.wrong; // current remaining wrongs
 
   const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🌟' : pct >= 60 ? '👍' : pct >= 40 ? '💪' : '📖';
   document.getElementById('gyk-result-emoji').textContent = emoji;
@@ -663,20 +674,28 @@ function gykFinishRound() {
         <div class="wrong-detail">Te: <span class="wrong-your">${w.yourAnswer}</span></div>
       </div>
     `).join('');
-    document.getElementById('gyk-retry-wrong-btn').style.display =
-      GYK.wrong.length >= 1 ? 'block' : 'none';
+    document.getElementById('gyk-retry-wrong-btn').style.display = 'block';
     document.getElementById('gyk-retry-wrong-btn').textContent =
       `🔁 Hibák újra (${GYK.roundNum + 1}. kör)`;
   } else {
+    // No more wrong answers → session complete, save now
     wrongSection.style.display = 'none';
     document.getElementById('gyk-retry-wrong-btn').style.display = 'none';
+    gykSaveSession(false);
+    gykRenderStatPage();
   }
 
   gykShowScreen('gyk-results');
 }
 
 function gykBackToSetup() {
+  // Save session if anything was answered
+  if (GYK.session.total > 0) {
+    gykSaveSession(false);
+    gykRenderStatPage();
+  }
   GYK.roundNum = 1;
+  GYK.session = { correct: 0, total: 0, allQuestions: [], wrong: [] };
   gykShowScreen('gyk-setup');
   gykUpdateSetupInfo();
 }
@@ -701,45 +720,42 @@ function gykLoadStats() {
   }
 }
 
-function gykSaveRound(correct, total, wrong, partial) {
+function gykSaveSession(partial) {
+  const sess = GYK.session;
+  if (sess.total === 0) return;
+
   const stats = gykLoadStats();
   const now   = new Date();
 
-  // Build set of wrong question keys
-  const wrongKeys = new Set(wrong.map(w => `${w.author}|${w.title}|${w.type}`));
+  // Build set of wrong question keys (final remaining wrongs)
+  const wrongKeys = new Set(sess.wrong.map(w => `${w.author}|${w.title}|${w.type}`));
 
-  // Slice to answered questions only
-  const answeredQs = GYK.questions.slice(0, GYK.current + (partial ? 0 : 0));
-  // All answered questions = indices 0..current-1 when partial, or all when finished
-  const qs = partial
-    ? GYK.questions.slice(0, GYK.current)
-    : GYK.questions;
-
-  qs.forEach(q => {
+  sess.allQuestions.forEach(q => {
     // Author stats
-    if (!stats.authors[q.author]) stats.authors[q.author] = { asked:0, correct:0, temakor: q.temakor };
+    if (!stats.authors[q.author]) stats.authors[q.author] = { asked:0, correct:0 };
     stats.authors[q.author].asked++;
-    stats.authors[q.author].temakor = q.temakor;
+    if (!wrongKeys.has(`${q.author}|${q.title}|${q.type}`))
+      stats.authors[q.author].correct++;
 
-    const key = `${q.author}|${q.title}|${q.type}`;
-    if (!wrongKeys.has(key)) stats.authors[q.author].correct++;
-
-    // Temakor stats — use original temakor from author data
+    // Temakor stats
     const tkIdx = adatok.find(a => a.nev === q.author)?.temakor ?? 0;
     const tkKey = tkIdx.toString();
     if (!stats.temakor[tkKey]) stats.temakor[tkKey] = { asked:0, correct:0, name: TK_NAMES[tkIdx] };
     stats.temakor[tkKey].asked++;
-    if (!wrongKeys.has(key)) stats.temakor[tkKey].correct++;
+    if (!wrongKeys.has(`${q.author}|${q.title}|${q.type}`))
+      stats.temakor[tkKey].correct++;
   });
 
   const dateStr = now.toLocaleDateString('hu-HU') + ' ' +
-    now.toLocaleTimeString('hu-HU', {hour:'2-digit',minute:'2-digit'});
+    now.toLocaleTimeString('hu-HU', {hour:'2-digit', minute:'2-digit'});
 
   stats.rounds.unshift({
     date: dateStr,
-    correct, total,
-    pct: Math.round(correct / total * 100),
-    wrongCount: wrong.length,
+    correct: sess.correct,
+    total:   sess.total,
+    pct:     Math.round(sess.correct / sess.total * 100),
+    wrongCount: sess.wrong.length,
+    rounds: GYK.roundNum,
     partial: !!partial
   });
   if (stats.rounds.length > 30) stats.rounds = stats.rounds.slice(0, 30);
@@ -779,7 +795,11 @@ function renderStatRounds(rounds) {
     <table class="stats-table">
       <thead><tr><th>Dátum</th><th>Eredmény</th><th>%</th><th></th></tr></thead>
       <tbody>
-        ${rounds.map(r => `
+        ${rounds.map(r => {
+          const badges = [];
+          if (r.partial) badges.push('<span class="partial-badge">félbehagyott</span>');
+          if (r.rounds > 1) badges.push(`<span class="partial-badge" style="background:#eaf3de;color:#3B6D11;border-color:#3B6D11">${r.rounds} kör</span>`);
+          return `
           <tr>
             <td style="white-space:nowrap">${r.date}</td>
             <td><strong>${r.correct} / ${r.total}</strong></td>
@@ -787,9 +807,9 @@ function renderStatRounds(rounds) {
               ${pctBar(r.pct)}
               <span class="stats-pct ${pctClass(r.pct)}">${r.pct}%</span>
             </td>
-            <td>${r.partial ? '<span class="partial-badge">félbehagyott</span>' : ''}</td>
-          </tr>
-        `).join('')}
+            <td style="white-space:nowrap">${badges.join(' ')}</td>
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>`;
 }
