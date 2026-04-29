@@ -615,9 +615,9 @@ function gykBuildQuestions(pairs) {
       const options = shuffle([p.author, ...wrongs]);
       return { ...p, options, correct: p.author };
     } else if (p.type === 'szerzotol') {
-      // Exclude ALL titles by this author to avoid multiple-correct-answer situations
+      // Collect ALL titles by this author across every entry (author may appear in multiple temakor entries)
       const authorTitles = new Set(
-        adatok.find(sz => sz.nev === p.author)?.muvek.map(m => m.cim) || []
+        adatok.filter(sz => sz.nev === p.author).flatMap(sz => sz.muvek.map(m => m.cim))
       );
       let wrongPool = titlePool.filter(t => !authorTitles.has(t));
       // Fallback to global pool if not enough wrong options
