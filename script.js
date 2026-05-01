@@ -1085,4 +1085,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Activate defaults
   document.querySelector('.tab-btn').click();       // first mufajok tab
   versShow(0);                                      // first vers tab
+
+  // Restore saved theme
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
 });
+
+/* ── Dark / Light theme toggle ── */
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  }
+}
