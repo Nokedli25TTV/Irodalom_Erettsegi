@@ -836,6 +836,25 @@ body {
 }
 .gyk-clear-stats-btn:hover { color: #b34040; border-color: #b34040; }
 
+/* ── Sortable table header ── */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color .15s;
+}
+.sortable-th:hover { color: var(--green-main); }
+.sort-icon {
+  display: inline-block;
+  font-size: .7rem;
+  opacity: .45;
+  margin-left: 2px;
+}
+.sort-icon.sort-active {
+  opacity: 1;
+  color: var(--green-main);
+}
+
 /* ── Filter buttons – partial state ── */
 .filter-btn.partial {
   border-color: var(--gold);

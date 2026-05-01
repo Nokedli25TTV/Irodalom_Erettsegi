@@ -293,20 +293,32 @@ function renderSzerzok() {
       card.className = 'szerzo-card' + (i === 0 ? ' active' : '');
       card.id = 'sc-' + tk + '-' + i;
 
-      const rows = sz.muvek.map(m => {
-        const tLabel = m.t==='lira'?'líra':m.t==='regeny'?'regény':m.t==='drama'?'dráma':'epika';
-        const tagHtml = `<span class="tag ${m.t}">${tLabel}</span>`;
-        const szHtml = m.sz
-          ? `<span class="szereplok">${m.sz}</span>`
-          : `<span style="color:var(--color-text-secondary);font-size:11px;">–</span>`;
-        return `<tr>
-          <td><strong>${m.cim}</strong></td>
-          <td style="white-space:nowrap;font-size:12px;">${m.ev}</td>
-          <td>${tagHtml} <span style="font-size:12px;">${m.mufaj}</span></td>
-          <td style="font-size:12px;">${m.tema}</td>
-          <td>${szHtml}</td>
-        </tr>`;
-      }).join('');
+      const tbodyId = `tbody-${tk}-${i}`;
+      const thEvId  = `thev-${tk}-${i}`;
+
+      // Helper: parse year string to a sortable number
+      function evToNum(evStr) {
+        const m = evStr.match(/\d+/);
+        return m ? parseInt(m[0]) : 9999;
+      }
+
+      // Helper: render rows from a (possibly sorted) muvek array
+      function buildRows(muvek) {
+        return muvek.map(m => {
+          const tLabel = m.t==='lira'?'líra':m.t==='regeny'?'regény':m.t==='drama'?'dráma':'epika';
+          const tagHtml = `<span class="tag ${m.t}">${tLabel}</span>`;
+          const szHtml = m.sz
+            ? `<span class="szereplok">${m.sz}</span>`
+            : `<span style="color:var(--color-text-secondary);font-size:11px;">–</span>`;
+          return `<tr>
+            <td><strong>${m.cim}</strong></td>
+            <td style="white-space:nowrap;font-size:12px;">${m.ev}</td>
+            <td>${tagHtml} <span style="font-size:12px;">${m.mufaj}</span></td>
+            <td style="font-size:12px;">${m.tema}</td>
+            <td>${szHtml}</td>
+          </tr>`;
+        }).join('');
+      }
 
       card.innerHTML = `
         <div class="szerzo-header">
@@ -318,11 +330,35 @@ function renderSzerzok() {
           <div class="szerzo-section-title">Főbb művek</div>
           <table class="data-table">
             <thead><tr>
-              <th>Cím</th><th>Év</th><th>Műfaj</th><th>Téma</th><th>Fontosabb szereplők</th>
+              <th>Cím</th>
+              <th id="${thEvId}" class="sortable-th" title="Kattints az időrend szerinti rendezéshez">
+                Év <span class="sort-icon">↕</span>
+              </th>
+              <th>Műfaj</th><th>Téma</th><th>Fontosabb szereplők</th>
             </tr></thead>
-            <tbody>${rows}</tbody>
+            <tbody id="${tbodyId}">${buildRows(sz.muvek)}</tbody>
           </table>
         </div>`;
+
+      // Wire up the Év header click after inserting into DOM
+      let evSortDir = null; // null = original, 'asc', 'desc'
+      card.querySelector(`#${thEvId}`).addEventListener('click', () => {
+        const tbody = card.querySelector(`#${tbodyId}`);
+        const thEv  = card.querySelector(`#${thEvId}`);
+
+        if (evSortDir !== 'asc') {
+          evSortDir = 'asc';
+          const sorted = [...sz.muvek].sort((a, b) => evToNum(a.ev) - evToNum(b.ev));
+          tbody.innerHTML = buildRows(sorted);
+          thEv.innerHTML = 'Év <span class="sort-icon sort-active">↑</span>';
+        } else {
+          evSortDir = 'desc';
+          const sorted = [...sz.muvek].sort((a, b) => evToNum(b.ev) - evToNum(a.ev));
+          tbody.innerHTML = buildRows(sorted);
+          thEv.innerHTML = 'Év <span class="sort-icon sort-active">↓</span>';
+        }
+      });
+
       panel.appendChild(card);
     });
 
